@@ -20,6 +20,20 @@ class EventModel {
         $date = substr((string)$row['event_date'], 0, 10);
         $time = substr((string)$row['event_time'], 0, 5);
 
+        $dbCategory = isset($row['category']) ? strtolower(trim($row['category'])) : 'other';
+        $category = 'other';
+        if ($dbCategory === 'technology') {
+            $category = 'academic';
+        } elseif ($dbCategory === 'arts') {
+            $category = 'culture';
+        } elseif ($dbCategory === 'entrepreneurship') {
+            $category = 'career';
+        } elseif ($dbCategory === 'social') {
+            $category = 'social';
+        } elseif ($dbCategory === 'sports') {
+            $category = 'sports';
+        }
+
         return [
             'id' => (int)$row['id'],
             'title' => $row['title'],
@@ -35,6 +49,7 @@ class EventModel {
             'featured' => (bool)$row['featured'],
             'is_approved' => isset($row['is_approved']) ? (bool)$row['is_approved'] : true,
             'status' => $this->getEventStatus($date, $time),
+            'category' => $category,
         ];
     }
 
@@ -57,7 +72,8 @@ class EventModel {
             SELECT
                 e.id, e.title, c.name AS club, c.logo AS club_logo, e.image,
                 e.event_date, e.event_time, e.location, e.description,
-                e.participants, e.max_participants, e.featured, e.is_approved
+                e.participants, e.max_participants, e.featured, e.is_approved,
+                c.category AS category
             FROM public.events e
             INNER JOIN public.clubs c ON c.id = e.club_id
         ';

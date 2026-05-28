@@ -61,7 +61,7 @@ function renderCalendar() {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const daysInPrev = new Date(year, month, 0).getDate();
-    const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+    const totalCells = 42;
 
     const frag = document.createDocumentFragment();
     calGrid.querySelectorAll('.day-name').forEach(n => frag.appendChild(n));
@@ -109,7 +109,9 @@ function renderCalendar() {
             const MAX = 2;
             dayEvts.slice(0, MAX).forEach(evt => {
                 const pill = document.createElement('span');
-                pill.className = `event-pill ${(CAT[evt.category || 'other'] || CAT.other).pill}`;
+                const isDone = evt.status === 'finished';
+                const pillClass = isDone ? 'pill-grey' : 'pill-red';
+                pill.className = `event-pill ${pillClass}`;
                 pill.textContent = evt.title;
                 cell.appendChild(pill);
             });
@@ -157,8 +159,10 @@ function openDayPanel(year, month, day) {
             const cat = CAT[evt.category || 'other'] || CAT.other;
             const item = document.createElement('div');
             item.className = 'agenda-item';
+            const isDone = evt.status === 'finished';
+            const accentClass = isDone ? 'pill-grey' : 'pill-red';
             item.innerHTML = `
-                <div class="agenda-accent ${cat.pill}"></div>
+                <div class="agenda-accent ${accentClass}"></div>
                 <div class="agenda-info">
                     <span class="agenda-time">${evt.time || '—'}</span>
                     <span class="agenda-name">${evt.title}</span>

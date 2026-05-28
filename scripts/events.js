@@ -35,10 +35,10 @@ function renderFeaturedEvents() {
     const eventCard = document.createElement("div");
     eventCard.className = "event-card-featured";
     eventCard.innerHTML = `
-      <img src="${event.image}" class="featured-bg" alt="${event.title}" />
+      <img src="${event.image}" class="featured-bg" alt="${event.title}" onerror="this.onerror=null;this.src='/assets/icons/insat.png'" />
       <div class="featured-overlay">
         <div class="club-tag">
-          <img src="${event.clubLogo}" alt="${event.club} logo" /> ${event.club}
+          <img src="${event.clubLogo}" alt="${event.club} logo" onerror="this.onerror=null;this.src='/assets/icons/insat.png'" /> ${event.club}
         </div>
         <h3>${event.title}</h3>
       </div>
@@ -80,11 +80,11 @@ function renderUpcomingEvents() {
     eventCard.className = "small-event-card";
     eventCard.innerHTML = `
       <div class="thumb">
-        <img src="${event.image}" alt="${event.title}" />
+        <img src="${event.image}" alt="${event.title}" onerror="this.onerror=null;this.src='/assets/icons/insat.png'" />
       </div>
       <div class="small-card-content">
         <div class="club-tag">
-          <img src="${event.clubLogo}" alt="${event.club} logo" /> ${event.club}
+          <img src="${event.clubLogo}" alt="${event.club} logo" onerror="this.onerror=null;this.src='/assets/icons/insat.png'" /> ${event.club}
         </div>
         <h4>${event.title}</h4>
         <p><i class="far fa-calendar"></i> ${formatDate(event.date)} at ${event.time}</p>

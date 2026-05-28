@@ -17,7 +17,7 @@ $action = $_GET['action'] ?? null;
 $method = $_SERVER['REQUEST_METHOD'];
 
 try {
-    require_once __DIR__ . '/../config/Database.php';
+    require_once __DIR__ . '/../config/database.php';
     Database::loadEnvironment(); // Required to load JWT_SECRET for AuthMiddleware
 
     AuthMiddleware::authenticate(); // Require authentication for any media changes

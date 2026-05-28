@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../config/Database.php';
+require_once __DIR__ . '/../config/database.php';
 try {
     $db = Database::connect();
     $stmt = $db->prepare('UPDATE public.events SET is_approved = TRUE');

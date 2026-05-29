@@ -45,6 +45,23 @@ try {
             $payload = $parseJsonBody();
             if (empty($payload)) $payload = $_POST;
 
+            if ($action === 'feedback') {
+                $data = $model->createEventFeedback($payload);
+                Response::success($data, 201, 'Feedback submitted successfully');
+                break;
+            }
+
+            if ($action === 'review') {
+                $id = $_GET['id'] ?? ($payload['eventId'] ?? null);
+                if (!$id) Response::error('Missing event ID');
+
+                AuthMiddleware::requireClubManager($model->clubIdForEvent($id));
+
+                $data = $model->upsertEventReview($id, $payload);
+                Response::success($data, 200, 'Event review saved successfully');
+                break;
+            }
+
             // Only an admin or the moderator of the target club may create events for it.
             AuthMiddleware::requireClubManager($model->clubIdForName($payload['club'] ?? ''));
 

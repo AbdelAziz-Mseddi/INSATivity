@@ -128,6 +128,22 @@ class ApiClient {
         });
     }
 
+    async reviewEvent(id, reviewData) {
+        return this.request(`/events.php?action=review&id=${id}`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify(reviewData)
+        });
+    }
+
+    async submitEventFeedback(feedbackData) {
+        return this.request('/events.php?action=feedback', {
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify(feedbackData)
+        });
+    }
+
     // ---- CLUBS ----
     async getClubs() {
         return this.request('/clubs.php?action=getAll', {

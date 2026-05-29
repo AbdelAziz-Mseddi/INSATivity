@@ -8,6 +8,30 @@ class EventModel {
     public function __construct() {
         $this->connection = Database::connect();
         $this->currentDate = date('Y-m-d');
+        $this->ensureReviewTables();
+    }
+
+    private function ensureReviewTables() {
+        $this->connection->exec('CREATE TABLE IF NOT EXISTS public.event_reviews (
+            event_id BIGINT PRIMARY KEY REFERENCES public.events (id) ON DELETE CASCADE,
+            review_rating NUMERIC(3,1) NOT NULL CHECK (review_rating >= 0 AND review_rating <= 5),
+            review_attendance INTEGER NOT NULL CHECK (review_attendance >= 0),
+            reviewed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )');
+
+        $this->connection->exec('CREATE TABLE IF NOT EXISTS public.event_feedback (
+            id BIGSERIAL PRIMARY KEY,
+            event_id BIGINT NOT NULL REFERENCES public.events (id) ON DELETE CASCADE,
+            club_id TEXT NOT NULL REFERENCES public.clubs (id) ON DELETE CASCADE,
+            user_id BIGINT,
+            rating NUMERIC(3,1) NOT NULL CHECK (rating >= 0 AND rating <= 5),
+            message TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )');
+
+        $this->connection->exec('CREATE INDEX IF NOT EXISTS idx_event_feedback_event_id ON public.event_feedback (event_id)');
     }
 
     private function getEventStatus($eventDate, $eventTime) {
@@ -48,6 +72,10 @@ class EventModel {
             'maxParticipants' => (int)$row['max_participants'],
             'featured' => (bool)$row['featured'],
             'is_approved' => isset($row['is_approved']) ? (bool)$row['is_approved'] : true,
+            'reviewed' => !empty($row['reviewed_event_id']),
+            'reviewRating' => isset($row['review_rating']) && $row['review_rating'] !== null ? (float)$row['review_rating'] : null,
+            'reviewAttendance' => isset($row['review_attendance']) && $row['review_attendance'] !== null ? (int)$row['review_attendance'] : null,
+            'reviewedAt' => $row['reviewed_at'] ?? null,
             'status' => $this->getEventStatus($date, $time),
             'category' => $category,
         ];
@@ -86,9 +114,11 @@ class EventModel {
                 e.id, e.title, c.name AS club, c.logo AS club_logo, e.image,
                 e.event_date, e.event_time, e.location, e.description,
                 e.participants, e.max_participants, e.featured, e.is_approved,
+                er.event_id AS reviewed_event_id, er.review_rating, er.review_attendance, er.reviewed_at,
                 c.category AS category
             FROM public.events e
             INNER JOIN public.clubs c ON c.id = e.club_id
+            LEFT JOIN public.event_reviews er ON er.event_id = e.id
         ';
         if ($whereClause !== '') {
             $query .= ' WHERE ' . $whereClause;
@@ -209,5 +239,67 @@ class EventModel {
 
         if ($stmt->rowCount() === 0) throw new Exception('Event not found');
         return $this->getEventById($eventId);
+    }
+
+    public function upsertEventReview($id, $payload) {
+        $eventId = (int)$id;
+        if ($eventId <= 0) throw new Exception('Invalid event ID');
+
+        $rating = isset($payload['rating']) ? (float)$payload['rating'] : null;
+        $attendance = isset($payload['attendance']) ? (int)$payload['attendance'] : null;
+
+        if ($rating === null || $attendance === null) {
+            throw new Exception('Missing review fields');
+        }
+
+        $event = $this->getEventById($eventId);
+        if (!$event) throw new Exception('Event not found');
+
+        $stmt = $this->connection->prepare(
+            'INSERT INTO public.event_reviews (event_id, review_rating, review_attendance, reviewed_at)
+             VALUES (:event_id, :review_rating, :review_attendance, NOW())
+             ON CONFLICT (event_id)
+             DO UPDATE SET review_rating = EXCLUDED.review_rating,
+                           review_attendance = EXCLUDED.review_attendance,
+                           reviewed_at = NOW()'
+        );
+
+        $stmt->execute([
+            ':event_id' => $eventId,
+            ':review_rating' => $rating,
+            ':review_attendance' => $attendance,
+        ]);
+
+        return $this->getEventById($eventId);
+    }
+
+    public function createEventFeedback($payload) {
+        $eventId = isset($payload['eventId']) ? (int)$payload['eventId'] : 0;
+        $rating = isset($payload['rating']) ? (float)$payload['rating'] : null;
+        $message = trim((string)($payload['message'] ?? ''));
+
+        if ($eventId <= 0) throw new Exception('Invalid event ID');
+        if ($rating === null) throw new Exception('Missing feedback rating');
+
+        $event = $this->getEventById($eventId);
+        if (!$event) throw new Exception('Event not found');
+
+        $clubId = $this->resolveClubId($event['club']);
+        if ($clubId === null) throw new Exception('Invalid club name');
+
+        $stmt = $this->connection->prepare(
+            'INSERT INTO public.event_feedback (event_id, club_id, rating, message, created_at)
+             VALUES (:event_id, :club_id, :rating, :message, NOW())
+             RETURNING id, event_id, club_id, rating, message, created_at'
+        );
+
+        $stmt->execute([
+            ':event_id' => $eventId,
+            ':club_id' => $clubId,
+            ':rating' => $rating,
+            ':message' => $message,
+        ]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }

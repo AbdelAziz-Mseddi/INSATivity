@@ -12,6 +12,7 @@ export function getDashboardDom() {
     sidebar: document.querySelector('.sidebar'),
     panels: Array.from(document.querySelectorAll('[data-panel]')),
     createForm: document.querySelector('.event-create-form'),
+    feedbackForm: document.querySelector('.feedback-form'),
     profileNameEl: document.querySelector('.club-name'),
     profileDescriptionEl: document.querySelector('.club-description'),
     profileBannerEl: document.querySelector('.club-banner'),
@@ -295,7 +296,7 @@ export function renderDoneEvents(dom, club, finishedEvents) {
           </div>
           <div class="done-review">
             <h4 class="done-review-title">Complete event review</h4>
-            <form class="done-review-form">
+            <form class="done-review-form" data-event-id="${eventId}">
               <div class="done-form-row">
                 <div class="form-field">
                   <label class="form-label" for="done-rating-${eventId}">How well did it go? (0-5)</label>

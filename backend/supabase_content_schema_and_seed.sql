@@ -33,10 +33,30 @@ CREATE TABLE IF NOT EXISTS public.events (
     CHECK (max_participants = 0 OR participants <= max_participants)
 );
 
+CREATE TABLE IF NOT EXISTS public.event_reviews (
+    event_id BIGINT PRIMARY KEY REFERENCES public.events (id) ON DELETE CASCADE,
+    review_rating NUMERIC(3,1) NOT NULL CHECK (review_rating >= 0 AND review_rating <= 5),
+    review_attendance INTEGER NOT NULL CHECK (review_attendance >= 0),
+    reviewed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.event_feedback (
+    id BIGSERIAL PRIMARY KEY,
+    event_id BIGINT NOT NULL REFERENCES public.events (id) ON DELETE CASCADE,
+    club_id TEXT NOT NULL REFERENCES public.clubs (id) ON DELETE CASCADE,
+    user_id BIGINT,
+    rating NUMERIC(3,1) NOT NULL CHECK (rating >= 0 AND rating <= 5),
+    message TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_clubs_category ON public.clubs (category);
 CREATE INDEX IF NOT EXISTS idx_events_club_id ON public.events (club_id);
 CREATE INDEX IF NOT EXISTS idx_events_event_date ON public.events (event_date);
 CREATE INDEX IF NOT EXISTS idx_events_featured ON public.events (featured);
+CREATE INDEX IF NOT EXISTS idx_event_feedback_event_id ON public.event_feedback (event_id);
 
 COMMIT;
 

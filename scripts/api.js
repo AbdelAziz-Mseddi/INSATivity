@@ -5,13 +5,10 @@ class ApiClient {
         this.baseURL = CONFIG.API_BASE_URL;
     }
 
-    // Helper for Authorization Header
+    // Helper for request headers. Auth is handled by the PHP session cookie,
+    // which the browser sends automatically on same-origin requests.
     getHeaders(isFormData = false) {
         const headers = {};
-        const token = localStorage.getItem('jwt_token');
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
         if (!isFormData) {
             headers['Content-Type'] = 'application/json';
         }
@@ -21,13 +18,16 @@ class ApiClient {
     // Core Fetch Method
     async request(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;
-        
+
+        // Always send the session cookie with API requests.
+        options.credentials = options.credentials || 'same-origin';
+
         try {
             const response = await fetch(url, options);
             const data = await response.json();
 
             if (!response.ok) {
-                // If token is expired or invalid, auto logout
+                // If the session is missing/expired, auto logout
                 if (response.status === 401 && endpoint !== '/auth.php?action=login') {
                     this.logout();
                 }
@@ -48,8 +48,7 @@ class ApiClient {
             headers: this.getHeaders(),
             body: JSON.stringify({ username, password })
         });
-        if (data && data.token) {
-            localStorage.setItem('jwt_token', data.token);
+        if (data && data.user) {
             localStorage.setItem('user', JSON.stringify(data.user));
         }
         return data;
@@ -61,15 +60,22 @@ class ApiClient {
             headers: this.getHeaders(),
             body: JSON.stringify(userData)
         });
-        if (data && data.token) {
-            localStorage.setItem('jwt_token', data.token);
+        if (data && data.user) {
             localStorage.setItem('user', JSON.stringify(data.user));
         }
         return data;
     }
 
-    logout() {
-        localStorage.removeItem('jwt_token');
+    async logout() {
+        // Destroy the server-side session, then clear the cached user.
+        try {
+            await fetch(`${this.baseURL}/auth.php?action=logout`, {
+                method: 'POST',
+                credentials: 'same-origin'
+            });
+        } catch (e) {
+            // Ignore network errors; still clear client state below.
+        }
         localStorage.removeItem('user');
         window.location.href = 'login.html'; // Redirect to login page
     }

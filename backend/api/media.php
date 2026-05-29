@@ -2,7 +2,7 @@
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 header('Access-Control-Allow-Methods: POST, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Authorization, Content-Type');
+header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -17,9 +17,6 @@ $action = $_GET['action'] ?? null;
 $method = $_SERVER['REQUEST_METHOD'];
 
 try {
-    require_once __DIR__ . '/../config/database.php';
-    Database::loadEnvironment(); // Required to load JWT_SECRET for AuthMiddleware
-
     AuthMiddleware::authenticate(); // Require authentication for any media changes
 
     $model = new MediaModel();

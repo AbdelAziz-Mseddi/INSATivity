@@ -1,6 +1,6 @@
 # INSATivity New Architecture Guide
 
-Welcome to the newly refactored INSATivity architecture! This project has been transitioned from a messy, session-based architecture to a clean, scalable **REST API pattern**.
+Welcome to the newly refactored INSATivity architecture! This project follows a clean, layered **REST API pattern** (endpoints → middleware → models), with authentication handled by PHP sessions.
 
 ## 1. Directory Structure
 
@@ -8,11 +8,11 @@ The project strictly separates the **Frontend** (UI and API clients) from the **
 
 ```text
 INSATivity/
-├── .env                          # Environment variables (Supabase credentials & JWT secret)
+├── .env                          # Environment variables (Supabase credentials)
 ├── pages/                        # HTML pages (UI)
 ├── styles/                       # CSS files
 ├── scripts/                      # Frontend JavaScript
-│   ├── api.js                    # The centralized API client (handles JWTs, headers, fetches)
+│   ├── api.js                    # The centralized API client (headers, fetches, session cookie)
 │   ├── config.js                 # Configuration file (holds API_BASE_URL)
 │   ├── events.js                 # UI logic for Events page
 │   ├── clubs.js                  # UI logic for Clubs page
@@ -26,14 +26,13 @@ INSATivity/
     ├── config/
     │   └── Database.php          # Database Singleton (connects to Supabase Postgres via PDO)
     ├── middleware/
-    │   └── AuthMiddleware.php    # Intercepts requests, validates JWT Bearer tokens, checks roles
+    │   └── AuthMiddleware.php    # Intercepts requests, validates the PHP session, checks roles
     ├── models/                   # Data Layer (Direct DB interactions)
     │   ├── UserModel.php         # Queries for public.users
     │   ├── EventModel.php        # Queries for public.events
     │   ├── ClubModel.php         # Queries for public.clubs
     │   └── MediaModel.php        # Handles file system storage
     └── utils/
-        ├── JWT.php               # JSON Web Token encoder/decoder
         └── Response.php          # Standardizes `{success: bool, data: ...}` outputs
 ```
 
@@ -44,9 +43,8 @@ INSATivity/
 - **Models (`backend/models/`)** do NOT handle HTTP requests or sessions. They only write raw SQL queries, execute them via PDO, and return raw arrays/objects.
 - **Frontend Scripts (`scripts/`)** do NOT use `fetch()` randomly. They all import the centralized `API` object from `api.js` to ensure consistent headers and error handling.
 
-### B. Stateless Authentication (JWT)
-Instead of relying on PHP `$_SESSION` cookies (which are stateful and don't scale well across mobile apps or cross-domain APIs), we use **JSON Web Tokens (JWT)**.
-When a user logs in, the backend creates an encrypted JWT string and sends it to the frontend. The frontend saves it in `localStorage` and attaches it to every future API request as an `Authorization: Bearer <token>` header.
+### B. Session-Based Authentication
+Authentication uses **PHP native sessions**. When a user logs in (or registers), the backend stores the authenticated user in `$_SESSION['user']` and PHP issues a `PHPSESSID` cookie. The browser automatically sends that cookie on every subsequent same-origin request, so the frontend does not manage any tokens. `AuthMiddleware` validates the session on protected endpoints, and `POST /auth.php?action=logout` destroys it. The frontend only caches the user object in `localStorage` for role-based UI rendering — it is not used for authentication.
 
 ### C. Standardized Responses
 Every API endpoint uses `backend/utils/Response.php` to guarantee a consistent JSON output format:
@@ -62,7 +60,7 @@ Every API endpoint uses `backend/utils/Response.php` to guarantee a consistent J
 ```json
 {
   "success": false,
-  "error": "Authentication required. Missing Bearer token.",
+  "error": "Authentication required. Please log in.",
   "code": "AUTH_MISSING"
 }
 ```

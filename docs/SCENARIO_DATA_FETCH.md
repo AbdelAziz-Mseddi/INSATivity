@@ -12,7 +12,7 @@ This document traces exactly what happens when a user opens the homepage and the
    - `loadEvents()` executes `const data = await API.getEvents();`.
 3. **API Client Execution (`scripts/api.js`)**
    - The `API` client calls its internal `request('/events.php?action=getAll')` method.
-   - It sends an HTTP `GET` request to the backend. Because fetching events is a public action, an Authorization header is included if the user is logged in, but the endpoint does not strictly require it.
+   - It sends an HTTP `GET` request to the backend with the session cookie (`credentials: 'same-origin'`). Fetching events is a public action, so the endpoint does not require an authenticated session.
 
 ---
 

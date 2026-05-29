@@ -17,7 +17,7 @@ $action = $_GET['action'] ?? null;
 $method = $_SERVER['REQUEST_METHOD'];
 
 try {
-    AuthMiddleware::authenticate(); // Require authentication for any media changes
+    AuthMiddleware::requireManagerOrAdmin(); // Only club moderators or admins manage media
 
     $model = new MediaModel();
 

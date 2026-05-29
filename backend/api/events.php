@@ -42,26 +42,30 @@ try {
             break;
 
         case 'POST':
-            AuthMiddleware::requireRole(['admin', 'student']); // allow authenticated users
             $payload = $parseJsonBody();
             if (empty($payload)) $payload = $_POST;
-            
+
+            // Only an admin or the moderator of the target club may create events for it.
+            AuthMiddleware::requireClubManager($model->clubIdForName($payload['club'] ?? ''));
+
             $data = $model->createEvent($payload);
             Response::success($data, 201, 'Event created successfully');
             break;
 
         case 'PUT':
         case 'PATCH':
-            AuthMiddleware::requireRole(['admin', 'student']);
             $id = $_GET['id'] ?? null;
             if (!$id) Response::error("Missing event ID");
 
             if ($action === 'approve') {
-                AuthMiddleware::requireRole(['admin']); // Only admins can approve
+                AuthMiddleware::requireRole(['admin']); // Only admins can approve pending events
                 $data = $model->approveEvent($id);
                 Response::success($data, 200, 'Event approved successfully');
                 break;
             }
+
+            // Only an admin or the moderator of the event's club may edit it.
+            AuthMiddleware::requireClubManager($model->clubIdForEvent($id));
 
             $payload = $parseJsonBody();
             $data = $model->updateEvent($id, $payload);

@@ -11,6 +11,7 @@ import {
   EVENT_MANAGER_CLUB_NAME_BY_ID,
 } from "./club-dashboard/constants.js";
 import {
+  applyRoleVisibility,
   bindSidebar,
   getDashboardDom,
   renderClubProfile,
@@ -20,7 +21,7 @@ import {
   renderLoadError,
   renderPendingEvents,
   setFormStatus,
-} from "./club-dashboard/render.js?v=3";
+} from "./club-dashboard/render.js?v=4";
 import {
   getRequestedClubId,
   normalizeText,
@@ -84,6 +85,8 @@ document.addEventListener("DOMContentLoaded", () => {
     renderHistoryEvents(dom, club, finishedEvents);
     renderDoneEvents(dom, club, finishedEvents);
     renderFeedbackEventOptions(dom, finishedEvents);
+    // Gate the management links (Create / Pending / Done) to this club's moderator or an admin.
+    applyRoleVisibility(dom, club);
   }
   // the final boss
   // nestaamlou kol chy w naamrou l dashboard

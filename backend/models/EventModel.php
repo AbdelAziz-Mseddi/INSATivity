@@ -53,6 +53,19 @@ class EventModel {
         ];
     }
 
+    // Public wrapper used by the API layer for authorization checks.
+    public function clubIdForName($clubName) {
+        return $this->resolveClubId($clubName);
+    }
+
+    // Returns the club_id that owns an event, or null if the event doesn't exist.
+    public function clubIdForEvent($id) {
+        $stmt = $this->connection->prepare('SELECT club_id FROM public.events WHERE id = :id LIMIT 1');
+        $stmt->execute([':id' => (int)$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? $row['club_id'] : null;
+    }
+
     private function resolveClubId($clubName) {
         if (!is_string($clubName) || trim($clubName) === '') {
             return null;

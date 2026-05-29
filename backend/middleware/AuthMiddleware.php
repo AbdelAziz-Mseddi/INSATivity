@@ -28,4 +28,35 @@ class AuthMiddleware {
 
         return $user;
     }
+
+    // A user is a "club moderator" when their club_id is set (one club per user).
+    public static function isModerator($user) {
+        return !empty($user['club_id']);
+    }
+
+    // Allow admins (any club) or the moderator of this specific club.
+    public static function requireClubManager($clubId) {
+        $user = self::authenticate();
+
+        if (($user['role'] ?? null) === 'admin') {
+            return $user;
+        }
+
+        if (!empty($user['club_id']) && (string)$user['club_id'] === (string)$clubId) {
+            return $user;
+        }
+
+        Response::error("Access denied. You can only manage your own club's events.", 'FORBIDDEN', 403);
+    }
+
+    // Allow admins or any club moderator (used for shared dashboard tools like uploads).
+    public static function requireManagerOrAdmin() {
+        $user = self::authenticate();
+
+        if (($user['role'] ?? null) === 'admin' || self::isModerator($user)) {
+            return $user;
+        }
+
+        Response::error('Access denied. Moderators or admins only.', 'FORBIDDEN', 403);
+    }
 }

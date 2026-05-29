@@ -5,6 +5,33 @@ export function getRequestedClubId() {
   return (params.get("club") || "").trim().toLowerCase();
 }
 
+// Reads the cached logged-in user (stored by api.js on login/register).
+// Used only for UI gating; the server is the source of truth for permissions.
+export function getCurrentUser() {
+  try {
+    const raw = localStorage.getItem("user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+// The school administrator: can do anything, including approving pending events.
+export function isAdminUser(user) {
+  return !!user && String(user.role).trim().toLowerCase() === "admin";
+}
+
+// A user may manage a club's dashboard if they are an admin (any club) or that
+// club's designated moderator (their user.club_id matches the club).
+export function canManageClub(user, clubId) {
+  if (isAdminUser(user)) return true;
+  return (
+    !!user &&
+    user.club_id != null &&
+    String(user.club_id).toLowerCase() === String(clubId).toLowerCase()
+  );
+}
+
 // Normalizes text for consistent comparison: converts to string, trims spaces, and lowercases
 // Useful for comparing names from different sources that may have spacing/casing differences
 export function normalizeText(value) {

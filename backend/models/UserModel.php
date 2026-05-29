@@ -10,7 +10,7 @@ class UserModel {
 
     public function findByEmailOrUsername($login) {
         $stmt = $this->connection->prepare(
-            "SELECT id, full_name, username, email, password_hash, role
+            "SELECT id, full_name, username, email, password_hash, role, club_id
              FROM users WHERE username = :login OR email = :login LIMIT 1"
         );
         $stmt->execute(['login' => $login]);

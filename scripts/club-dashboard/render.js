@@ -1,6 +1,8 @@
 import {
+  canManageClub,
   escapeHtml,
   formatEventDate,
+  getCurrentUser,
   getEventTheme,
   getRelativeDateLabel
 } from './utils.js';
@@ -54,6 +56,27 @@ export function bindSidebar(dom) {
   if (first?.dataset.target) {
     showPanel(dom, first.dataset.target);
   }
+}
+// Show the club-management links (Create / Pending / Done) only to the club's
+// moderator or an admin. Normal users get the read-only club view (Profile,
+// Community Feedback, History). Returns whether the viewer can manage the club.
+export function applyRoleVisibility(dom, club) {
+  const canManage = canManageClub(getCurrentUser(), club.id);
+
+  dom.sidebar?.querySelectorAll('.sidebar_link[data-role="admin"]').forEach(link => {
+    link.hidden = !canManage;
+  });
+
+  // If a management panel is currently active but the viewer can't manage it,
+  // fall back to the public profile panel.
+  if (!canManage) {
+    const active = dom.sidebar?.querySelector('.sidebar_link.active');
+    if (active?.dataset.role === 'admin') {
+      showPanel(dom, 'profile');
+    }
+  }
+
+  return canManage;
 }
 // naamlou "resultat" lel form submission kenha mouch mawjouda, snn nbadlouha
 export function setFormStatus(dom, message, isError = false) {

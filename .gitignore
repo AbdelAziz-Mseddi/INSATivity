@@ -36,7 +36,6 @@ pnpm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
-<<<<<<< HEAD
 *.swp
 *.swo
 *~
@@ -57,12 +56,7 @@ Thumbs.db
 /uploads/
 /storage/
 /cache/
-=======
+/var/
 
 # Generated uploads
 assets/uploads/
-
-# ozymandias
-.env
-.env
->>>>>>> feature/supabase_integration

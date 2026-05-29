@@ -139,15 +139,12 @@ export function renderClubProfile(dom, club, events) {
 }
 // panel l <pending> events (yestanew fel confirmation mel admin)
 // pour le moment l pending wel finished wel history mazel mouch mriguel
-export function renderPendingEvents(dom, club, upcomingEvents) {
+export function renderPendingEvents(dom, club, upcomingEvents, currentUser) {
   if (dom.pendingTitle) dom.pendingTitle.textContent = `${club.name} Pending Events`;
   if (dom.pendingStatus) dom.pendingStatus.textContent = `${upcomingEvents.length} awaiting review`;
   if (!dom.pendingList) return;
 
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
-  console.log("Current user for admin check:", user);
-  const isAdmin = user && String(user.role).trim().toLowerCase() === 'admin';
+  const isAdmin = currentUser && String(currentUser.role).trim().toLowerCase() === 'admin';
 
   if (!upcomingEvents.length) {
     dom.pendingList.innerHTML = '<article class="pending-card"><div class="pending-body"><h3 class="pending-name">No upcoming events for this club.</h3></div></article>';

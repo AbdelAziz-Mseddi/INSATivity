@@ -17,6 +17,14 @@ export async function createEvent(payload) {
     return API.createEvent(payload);
 }
 
+export async function approveEvent(id) {
+    return API.approveEvent(id);
+}
+
+export async function deleteEvent(id) {
+    return API.deleteEvent(id);
+}
+
 export async function reviewEvent(id, payload) {
     return API.reviewEvent(id, payload);
 }

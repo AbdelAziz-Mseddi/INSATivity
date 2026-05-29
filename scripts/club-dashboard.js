@@ -7,6 +7,8 @@ import {
   reviewEvent,
   submitEventFeedback,
   uploadCoverImage,
+  approveEvent,
+  deleteEvent,
 } from "./club-dashboard/api.js";
 import {
   DEFAULT_CLUB_ID,
@@ -77,7 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
   // nestaamlou data li jebneha w naltkhouha (rendering) aal dashboard
-  function applyClubDashboardContent(club, events) {
+  function applyClubDashboardContent(club, events, currentUser) {
     const pendingEvents = events.filter(e => !e.is_approved);
     const approvedEvents = events.filter(e => e.is_approved);
     const { upcomingEvents, finishedEvents } = splitEventsByDate(approvedEvents);
@@ -85,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const reviewQueueEvents = finishedEvents.filter(event => !event.reviewed);
 
     renderClubProfile(dom, club, approvedEvents);
-    renderPendingEvents(dom, club, pendingEvents);
+    renderPendingEvents(dom, club, pendingEvents, currentUser);
     renderHistoryEvents(dom, club, reviewedEvents);
     renderDoneEvents(dom, club, reviewQueueEvents);
     renderFeedbackEventOptions(dom, reviewedEvents);
@@ -108,6 +110,21 @@ document.addEventListener("DOMContentLoaded", () => {
     status.textContent = message;
     status.style.color = isError ? '#b42318' : '#027a48';
   }
+  // Fetch current user from backend API (source of truth)
+  async function getCurrentUserFromBackend() {
+    try {
+      const response = await fetch('/backend/api/auth.php?action=me', {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await response.json();
+      return data.success ? data.data.user : null;
+    } catch {
+      return null;
+    }
+  }
+
   // the final boss
   // nestaamlou kol chy w naamrou l dashboard
   async function loadDashboardData() {
@@ -124,9 +141,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const allEvents = await fetchAllEvents();
       const clubEvents = getClubEvents(allEvents, club);
+      const currentUser = await getCurrentUserFromBackend();
 
       activeClub = club;
-      applyClubDashboardContent(club, clubEvents);
+      applyClubDashboardContent(club, clubEvents, currentUser);
     } catch (error) {
       renderLoadError(dom, error.message);
     }
@@ -285,9 +303,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target.classList.contains('approve-btn')) {
       const id = e.target.dataset.id;
       try {
-        const { API } = await import('./api.js');
-        await API.request(`/events.php?action=approve&id=${id}`, { method: 'PATCH', headers: API.getHeaders() });
-        await loadDashboardData();
+        await approveEvent(id);
+        // Remove the event card from the DOM
+        const card = e.target.closest('.pending-card');
+        card?.remove();
+        // Update the pending count
+        const pendingCards = dom.pendingList.querySelectorAll('.pending-card');
+        if (dom.pendingStatus) {
+          dom.pendingStatus.textContent = `${pendingCards.length} awaiting review`;
+        }
       } catch (err) {
         alert(err.message || 'Failed to approve event');
       }
@@ -296,9 +320,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const id = e.target.dataset.id;
       if (confirm('Are you sure you want to reject and delete this event?')) {
         try {
-          const { API } = await import('./api.js');
-          await API.deleteEvent(id);
-          await loadDashboardData();
+          await deleteEvent(id);
+          // Remove the event card from the DOM
+          const card = e.target.closest('.pending-card');
+          card?.remove();
+          // Update the pending count
+          const pendingCards = dom.pendingList.querySelectorAll('.pending-card');
+          if (dom.pendingStatus) {
+            dom.pendingStatus.textContent = `${pendingCards.length} awaiting review`;
+          }
         } catch (err) {
           alert(err.message || 'Failed to reject event');
         }

@@ -121,6 +121,13 @@ class ApiClient {
         });
     }
 
+    async approveEvent(id) {
+        return this.request(`/events.php?action=approve&id=${id}`, {
+            method: 'PATCH',
+            headers: this.getHeaders()
+        });
+    }
+
     async deleteEvent(id) {
         return this.request(`/events.php?action=delete&id=${id}`, {
             method: 'DELETE',
